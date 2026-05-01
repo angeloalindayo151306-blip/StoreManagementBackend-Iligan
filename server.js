@@ -40,7 +40,7 @@ app.get('/products/:id', (req, res) => {
 
 // CREATE product
 app.post('/products', (req, res) => {
-  const { name, price, stock } = req.body;
+  const { name, price, stock, image, specs } = req.body;
 
   if (!name || price == null || stock == null) {
     return res.status(400).json({ message: 'All fields are required' });
@@ -51,6 +51,8 @@ app.post('/products', (req, res) => {
     name,
     price,
     stock,
+    image: image || null,
+    specs: specs || null
   };
 
   products.push(newProduct);
@@ -65,11 +67,13 @@ app.put('/products/:id', (req, res) => {
     return res.status(404).json({ message: 'Product not found' });
   }
 
-  const { name, price, stock } = req.body;
+  const { name, price, stock, image, specs } = req.body;
 
   if (name) product.name = name;
   if (price != null) product.price = price;
   if (stock != null) product.stock = stock;
+  if (image !== undefined) product.image = image;
+  if (specs !== undefined) product.specs = specs;
 
   res.json(product);
 });
@@ -106,7 +110,7 @@ app.post('/customers', (req, res) => {
   const newCustomer = {
     id: uuidv4(),
     name,
-    email,
+    email
   };
 
   customers.push(newCustomer);
@@ -155,7 +159,7 @@ app.post('/orders', (req, res) => {
     id: uuidv4(),
     customerId,
     productId,
-    quantity,
+    quantity
   };
 
   orders.push(newOrder);
