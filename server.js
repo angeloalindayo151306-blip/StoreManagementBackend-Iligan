@@ -31,7 +31,7 @@ app.get('/products', (req, res) => {
 
 // GET product by ID
 app.get('/products/:id', (req, res) => {
-  const product = products.find((p) => p.id === req.params.id);
+  const product = products.find(p => p.id === req.params.id);
   if (!product) {
     return res.status(404).json({ message: 'Product not found' });
   }
@@ -46,11 +46,15 @@ app.post('/products', (req, res) => {
     return res.status(400).json({ message: 'All fields are required' });
   }
 
+  if (Number(stock) < 0 || Number(price) < 0) {
+    return res.status(400).json({ message: 'Invalid price or stock value' });
+  }
+
   const newProduct = {
     id: uuidv4(),
     name,
-    price,
-    stock,
+    price: Number(price),
+    stock: Number(stock),
     image: image || null,
     specs: specs || null
   };
@@ -61,17 +65,16 @@ app.post('/products', (req, res) => {
 
 // UPDATE product
 app.put('/products/:id', (req, res) => {
-  const product = products.find((p) => p.id === req.params.id);
-
+  const product = products.find(p => p.id === req.params.id);
   if (!product) {
     return res.status(404).json({ message: 'Product not found' });
   }
 
   const { name, price, stock, image, specs } = req.body;
 
-  if (name) product.name = name;
-  if (price != null) product.price = price;
-  if (stock != null) product.stock = stock;
+  if (name !== undefined) product.name = name;
+  if (price !== undefined) product.price = Number(price);
+  if (stock !== undefined) product.stock = Number(stock);
   if (image !== undefined) product.image = image;
   if (specs !== undefined) product.specs = specs;
 
@@ -80,8 +83,7 @@ app.put('/products/:id', (req, res) => {
 
 // DELETE product
 app.delete('/products/:id', (req, res) => {
-  const index = products.findIndex((p) => p.id === req.params.id);
-
+  const index = products.findIndex(p => p.id === req.params.id);
   if (index === -1) {
     return res.status(404).json({ message: 'Product not found' });
   }
@@ -117,10 +119,24 @@ app.post('/customers', (req, res) => {
   res.status(201).json(newCustomer);
 });
 
+// UPDATE customer (NEW)
+app.put('/customers/:id', (req, res) => {
+  const customer = customers.find(c => c.id === req.params.id);
+  if (!customer) {
+    return res.status(404).json({ message: 'Customer not found' });
+  }
+
+  const { name, email } = req.body;
+
+  if (name !== undefined) customer.name = name;
+  if (email !== undefined) customer.email = email;
+
+  res.json(customer);
+});
+
 // DELETE customer
 app.delete('/customers/:id', (req, res) => {
-  const index = customers.findIndex((c) => c.id === req.params.id);
-
+  const index = customers.findIndex(c => c.id === req.params.id);
   if (index === -1) {
     return res.status(404).json({ message: 'Customer not found' });
   }
@@ -142,11 +158,15 @@ app.get('/orders', (req, res) => {
 app.post('/orders', (req, res) => {
   const { customerId, productId, quantity } = req.body;
 
-  const customer = customers.find((c) => c.id === customerId);
-  const product = products.find((p) => p.id === productId);
+  const customer = customers.find(c => c.id === customerId);
+  const product = products.find(p => p.id === productId);
 
   if (!customer || !product) {
     return res.status(400).json({ message: 'Invalid customer or product ID' });
+  }
+
+  if (!quantity || quantity <= 0) {
+    return res.status(400).json({ message: 'Invalid quantity' });
   }
 
   if (product.stock < quantity) {
@@ -166,12 +186,18 @@ app.post('/orders', (req, res) => {
   res.status(201).json(newOrder);
 });
 
-// DELETE order
+// DELETE order (RESTORE STOCK ✅)
 app.delete('/orders/:id', (req, res) => {
-  const index = orders.findIndex((o) => o.id === req.params.id);
-
+  const index = orders.findIndex(o => o.id === req.params.id);
   if (index === -1) {
     return res.status(404).json({ message: 'Order not found' });
+  }
+
+  const order = orders[index];
+  const product = products.find(p => p.id === order.productId);
+
+  if (product) {
+    product.stock += order.quantity; // ✅ restore stock
   }
 
   orders.splice(index, 1);
